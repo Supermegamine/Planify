@@ -2,6 +2,8 @@
 
 A full-stack productivity app that combines intelligent task management, daily habit tracking, and calendar scheduling into one dashboard.
 
+This Project was created with the help of Claude Code.
+
 ## Features
 
 - **Smart To-Do with Priority Scoring** — Tasks auto-rank using the Eisenhower matrix (Urgent/Important). Overdue items are flagged, and tasks flow through To Do → In Progress → Done columns.
