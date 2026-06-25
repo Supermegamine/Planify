@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  deadline    DateTime?
+  importance  String    @default("medium")
+  urgency     String    @default("medium")
+  status      String    @default("todo")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+}
+
+model Habit {
+  id        String     @id @default(cuid())
+  name      String
+  icon      String     @default("check")
+  color     String     @default("#6366f1")
+  frequency String     @default("daily")
+  createdAt DateTime   @default(now())
+  logs      HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  date      DateTime
+  completed Boolean  @default(true)
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+}
+
+model Standup {
+  id        String   @id @default(cuid())
+  date      DateTime
+  done      String
+  planned   String
+  blockers  String?
+  mood      Int      @default(3)
+  createdAt DateTime @default(now())
+
+  @@unique([date])
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  startTime String
+  endTime   String
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
