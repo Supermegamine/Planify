@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -14,6 +14,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { createDemoId } from "@/lib/demo-store";
+import { useDemoData } from "@/lib/use-demo-data";
 
 interface CalendarEvent {
   id: string;
@@ -200,7 +202,7 @@ function DayColumn({
 }
 
 export default function SchedulePage() {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const { data, update } = useDemoData();
   const [weekStart, setWeekStart] = useState(() => {
     const now = new Date();
     const day = now.getDay();
@@ -227,41 +229,40 @@ export default function SchedulePage() {
     return d;
   });
 
-  const fetchEvents = useCallback(async () => {
-    const start = weekDays[0].toISOString().split("T")[0];
-    const end = weekDays[6].toISOString().split("T")[0];
-    const res = await fetch(`/api/events?start=${start}&end=${end}`);
-    setEvents(await res.json());
-  }, [weekStart]);
+  const weekEnd = weekDays[6].toISOString().split("T")[0];
+  const weekStartDate = weekDays[0].toISOString().split("T")[0];
+  const events = data.events.filter((event) => {
+    const date = toDateStr(event.date);
+    return date >= weekStartDate && date <= weekEnd;
+  });
 
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    if (editEvent) {
-      await fetch("/api/events", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editEvent.id, ...form }),
-      });
-    } else {
-      await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-    }
+
+    update((current) => {
+      if (editEvent) {
+        return {
+          ...current,
+          events: current.events.map((event) =>
+            event.id === editEvent.id ? { ...event, ...form } : event
+          ),
+        };
+      }
+      return {
+        ...current,
+        events: [...current.events, { id: createDemoId("event"), ...form }],
+      };
+    });
     closeModal();
-    fetchEvents();
   };
 
-  const deleteEvent = async (id: string) => {
-    await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+  const deleteEvent = (id: string) => {
+    update((current) => ({
+      ...current,
+      events: current.events.filter((event) => event.id !== id),
+    }));
     if (editEvent?.id === id) closeModal();
-    fetchEvents();
   };
 
   const closeModal = () => {
@@ -299,40 +300,31 @@ export default function SchedulePage() {
     return events.filter((e) => toDateStr(e.date) === dateStr);
   };
 
-  const handleDragEnd = async ({ active, over, delta }: DragEndEvent) => {
-    const event = events.find((e) => e.id === active.id);
+  const handleDragEnd = ({ active, over, delta }: DragEndEvent) => {
+    const event = events.find((item) => item.id === active.id);
     if (!event) return;
 
     const startMin = timeToMin(event.startTime);
     const duration = timeToMin(event.endTime) - startMin;
     const deltaMin = Math.round((delta.y / HOUR_HEIGHT) * 60 / SNAP) * SNAP;
-
     let newStart = startMin + deltaMin;
     newStart = Math.max(DAY_START * 60, Math.min(newStart, DAY_END * 60 - duration));
     const newDate = over ? String(over.id) : toDateStr(event.date);
-
     if (deltaMin === 0 && newDate === toDateStr(event.date)) return;
 
-    const updated = {
-      ...event,
-      date: newDate,
-      startTime: minToTime(newStart),
-      endTime: minToTime(newStart + duration),
-    };
-
-    setEvents((prev) => prev.map((e) => (e.id === event.id ? updated : e)));
-
-    await fetch("/api/events", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: event.id,
-        date: newDate,
-        startTime: updated.startTime,
-        endTime: updated.endTime,
-      }),
-    });
-    fetchEvents();
+    update((current) => ({
+      ...current,
+      events: current.events.map((item) =>
+        item.id === event.id
+          ? {
+              ...item,
+              date: newDate,
+              startTime: minToTime(newStart),
+              endTime: minToTime(newStart + duration),
+            }
+          : item
+      ),
+    }));
   };
 
   const todayStr = new Date().toISOString().split("T")[0];
