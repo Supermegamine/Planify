@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "prisma migrate deploy && next start",
-    "lint": "eslint",
-    "postinstall": "prisma generate"
+    "lint": "eslint"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
