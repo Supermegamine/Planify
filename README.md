@@ -2,9 +2,11 @@
 
 This branch contains a database-free demo of Planify, deployed as a static site with GitHub Pages.
 
-## Live demo
+## Expected demo URL
 
 https://supermegamine.github.io/Planify/
+
+This URL becomes available after the first successful Pages deployment.
 
 ## Demo behavior
 
@@ -24,7 +26,8 @@ One-time repository setup, if Pages is not already enabled:
 
 1. Open **Settings → Pages** in the repository.
 2. Set the build and deployment source to **GitHub Actions**.
-3. Push a commit to `demo/github-pages` or run **Deploy Planify demo to GitHub Pages** from the Actions tab.
+3. Allow the `demo/github-pages` branch in **Settings → Environments → github-pages → Deployment branches and tags** (or allow all branches). This is required if the environment currently restricts deployments to `main`.
+4. Push a commit to `demo/github-pages` or run **Deploy Planify demo to GitHub Pages** from the Actions tab.
 
 The Next.js configuration uses the repository base path `/Planify`, so the published URL works for a project page.
 
