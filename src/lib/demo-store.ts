@@ -49,6 +49,8 @@ export type DemoData = {
   habits: DemoHabit[];
   standups: DemoStandup[];
   events: DemoEvent[];
+  /** Local date when this browser's demo data was last opened. */
+  lastOpenedOn?: string;
 };
 
 const STORAGE_KEY = "planify-demo-data-v1";
@@ -267,7 +269,79 @@ export function createDemoData(): DemoData {
     { id: "event-wrap", title: "Weekly wrap-up", date: dayOfWeekOffset(4), startTime: "16:00", endTime: "16:45", color: "#64748b" },
   ];
 
-  return { tasks, habits, standups, events };
+  return { tasks, habits, standups, events, lastOpenedOn: localDateString() };
+}
+
+function addDays(dateString: string, days: number): string {
+  const [year, month, day] = dateString.slice(0, 10).split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1, day + days));
+  return shifted.toISOString().slice(0, 10);
+}
+
+function shiftTimestamp(value: string | null, days: number): string | null {
+  if (!value || days === 0) return value;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Date(parsed.getTime() + days * 86400000).toISOString();
+}
+
+function mondayOf(dateString: string): string {
+  const [year, month, day] = dateString.slice(0, 10).split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const weekday = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - weekday + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function daysBetween(from: string, to: string): number {
+  const [fy, fm, fd] = from.split("-").map(Number);
+  const [ty, tm, td] = to.split("-").map(Number);
+  return Math.round(
+    (Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000
+  );
+}
+
+/**
+ * Keep the sample workspace feeling current without discarding a visitor's edits.
+ * Relative daily data moves by elapsed days; calendar events move by whole weeks
+ * so their weekday/time layout remains stable in the current week.
+ */
+function rebaseDemoData(data: DemoData, today: string): DemoData {
+  const lastOpenedOn =
+    data.lastOpenedOn ??
+    data.standups[0]?.date.slice(0, 10) ??
+    today;
+
+  const elapsedDays = daysBetween(lastOpenedOn, today);
+  const elapsedWeeks = daysBetween(mondayOf(lastOpenedOn), mondayOf(today));
+
+  if (elapsedDays === 0 && data.lastOpenedOn === today) return data;
+
+  return {
+    ...data,
+    lastOpenedOn: today,
+    tasks: data.tasks.map((task) => ({
+      ...task,
+      deadline: shiftTimestamp(task.deadline, elapsedDays),
+      completedAt: shiftTimestamp(task.completedAt, elapsedDays),
+      createdAt: shiftTimestamp(task.createdAt, elapsedDays) ?? task.createdAt,
+    })),
+    habits: data.habits.map((habit) => ({
+      ...habit,
+      logs: habit.logs.map((log) => ({
+        ...log,
+        date: addDays(log.date, elapsedDays),
+      })),
+    })),
+    standups: data.standups.map((standup) => ({
+      ...standup,
+      date: addDays(standup.date, elapsedDays),
+    })),
+    events: data.events.map((event) => ({
+      ...event,
+      date: addDays(event.date, elapsedWeeks),
+    })),
+  };
 }
 
 function notifyUpdate(): void {
@@ -281,7 +355,14 @@ export function readDemoData(): DemoData {
 
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored) as DemoData;
+    if (stored) {
+      const parsed = JSON.parse(stored) as DemoData;
+      const rebased = rebaseDemoData(parsed, localDateString());
+      if (rebased !== parsed) {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rebased));
+      }
+      return rebased;
+    }
   } catch {
     // A malformed or unavailable localStorage entry is replaced with fresh demo data.
   }
