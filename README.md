@@ -1,132 +1,49 @@
-# Planify — Smart Planner & Habit Tracker
+# Planify — Static Demo
 
-A full-stack productivity app that combines intelligent task management, daily habit tracking, and calendar scheduling into one dashboard.
+This branch contains a database-free demo of Planify, deployed as a static site with GitHub Pages.
 
-## Features
+## Live demo
 
-- **Smart To-Do with Priority Scoring** — Tasks auto-rank using the Eisenhower matrix (Urgent/Important). Overdue items are flagged, and tasks flow through To Do → In Progress → Done columns.
+https://supermegamine.github.io/Planify/
 
-- **Habit Tracker with Streaks** — Track daily habits with a 7-day heatmap, streak counting, and one-click completion toggles.
+## Demo behavior
 
-- **Daily Standups** — Log what you did, what's next, and any blockers. Includes a mood tracker (1-5 stars) to monitor energy over time.
+- Dashboard, task board, habit tracker, daily standups, weekly calendar, and analytics.
+- Seeded fictional sample data is created locally in the browser.
+- Create, edit, delete, complete, drag, and reschedule interactions update the local demo data.
+- Changes are stored in the browser's `localStorage`; they are not sent to a server and are not shared with other visitors.
+- Use **Reset demo data** in the banner to restore the sample dataset.
 
-- **Weekly Calendar** — Schedule events with a visual weekly grid, color coding, and conflict detection for overlapping time slots.
+There is no database, API server, or runtime backend in this demo. The original application and its Prisma/SQLite implementation remain on `main`.
 
-- **Analytics Dashboard** — Charts for task completion trends, habit consistency, mood tracking, and overall productivity stats.
+## Deploy
 
-## Tech Stack
+The GitHub Actions workflow at `.github/workflows/deploy-demo.yml` builds the Next.js app as a static export and deploys the `out/` directory to GitHub Pages whenever `demo/github-pages` is updated.
 
-- **Framework:** Next.js 16 (App Router, TypeScript)
-- **Database:** SQLite via Prisma ORM
-- **Styling:** Tailwind CSS v4
-- **Charts:** Recharts
-- **Fonts:** Geist Sans & Geist Mono
+One-time repository setup, if Pages is not already enabled:
 
-## Getting Started
+1. Open **Settings → Pages** in the repository.
+2. Set the build and deployment source to **GitHub Actions**.
+3. Push a commit to `demo/github-pages` or run **Deploy Planify demo to GitHub Pages** from the Actions tab.
+
+The Next.js configuration uses the repository base path `/Planify`, so the published URL works for a project page.
+
+## Run locally
 
 ```bash
-# Install dependencies
-npm install
-
-# Set up the database
-npx prisma migrate dev
-
-# Generate Prisma client
-npx prisma generate
-
-# Start the dev server
+npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the app.
-
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── page.tsx              # Dashboard (server component)
-│   ├── tasks/page.tsx        # Kanban task board
-│   ├── habits/page.tsx       # Habit tracker & standups
-│   ├── schedule/page.tsx     # Weekly calendar
-│   ├── analytics/page.tsx    # Charts & stats
-│   └── api/                  # REST API routes
-│       ├── tasks/route.ts
-│       ├── habits/route.ts
-│       ├── events/route.ts
-│       └── standups/route.ts
-├── components/
-│   ├── ui/                   # Reusable UI components
-│   └── layout/               # Sidebar navigation
-├── lib/
-│   ├── db.ts                 # Prisma client singleton
-│   └── utils.ts              # Eisenhower matrix, streaks, helpers
-└── generated/prisma/         # Generated Prisma client
-```
-# Planify — Smart Planner & Habit Tracker
-
-A full-stack productivity app that combines intelligent task management, daily habit tracking, and calendar scheduling into one dashboard.
-
-This Project was created with the help of Claude Code.
-
-## Features
-
-- **Smart To-Do with Priority Scoring** — Tasks auto-rank using the Eisenhower matrix (Urgent/Important). Overdue items are flagged, and tasks flow through To Do → In Progress → Done columns.
-
-- **Habit Tracker with Streaks** — Track daily habits with a 7-day heatmap, streak counting, and one-click completion toggles.
-
-- **Daily Standups** — Log what you did, what's next, and any blockers. Includes a mood tracker (1-5 stars) to monitor energy over time.
-
-- **Weekly Calendar** — Schedule events with a visual weekly grid, color coding, and conflict detection for overlapping time slots.
-
-- **Analytics Dashboard** — Charts for task completion trends, habit consistency, mood tracking, and overall productivity stats.
-
-## Tech Stack
-
-- **Framework:** Next.js 16 (App Router, TypeScript)
-- **Database:** SQLite via Prisma ORM
-- **Styling:** Tailwind CSS v4
-- **Charts:** Recharts
-- **Fonts:** Geist Sans & Geist Mono
-
-## Getting Started
+The browser demo store is initialized with sample data on first visit. To verify the production export locally:
 
 ```bash
-# Install dependencies
-npm install
-
-# Set up the database
-npx prisma migrate dev
-
-# Generate Prisma client
-npx prisma generate
-
-# Start the dev server
-npm run dev
+npm run build
+npx serve out
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the app.
+## Notes
 
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── page.tsx              # Dashboard (server component)
-│   ├── tasks/page.tsx        # Kanban task board
-│   ├── habits/page.tsx       # Habit tracker & standups
-│   ├── schedule/page.tsx     # Weekly calendar
-│   ├── analytics/page.tsx    # Charts & stats
-│   └── api/                  # REST API routes
-│       ├── tasks/route.ts
-│       ├── habits/route.ts
-│       ├── events/route.ts
-│       └── standups/route.ts
-├── components/
-│   ├── ui/                   # Reusable UI components
-│   └── layout/               # Sidebar navigation
-├── lib/
-│   ├── db.ts                 # Prisma client singleton
-│   └── utils.ts              # Eisenhower matrix, streaks, helpers
-└── generated/prisma/         # Generated Prisma client
-```
+- This branch removes the API route handlers from the demo build and replaces database reads/writes with a shared client-side data store.
+- Demo data is fictional. Avoid entering personal or sensitive information.
+- Clearing this site's browser storage will also reset the demo data.
