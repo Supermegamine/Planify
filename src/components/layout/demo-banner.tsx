@@ -8,7 +8,7 @@ export function DemoBanner() {
       <div>
         <span className="font-semibold">Demo mode</span>
         <span className="ml-2 text-indigo-800 dark:text-indigo-200">
-          Sample data · Changes are saved only in this browser
+          Sample data · Browser-only changes · Sample dates roll forward on return
         </span>
       </div>
       <button
