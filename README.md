@@ -14,6 +14,7 @@ This URL becomes available after the first successful Pages deployment.
 - Seeded fictional sample data is created locally in the browser.
 - Create, edit, delete, complete, drag, and reschedule interactions update the local demo data.
 - Changes are stored in the browser's `localStorage`; they are not sent to a server and are not shared with other visitors.
+- On a later visit, due dates, habit logs, standups, and calendar events roll forward automatically. Calendar entries keep their weekday and time, while daily history remains relative to the current date.
 - Use **Reset demo data** in the banner to restore the sample dataset.
 
 There is no database, API server, or runtime backend in this demo. The original application and its Prisma/SQLite implementation remain on `main`.
