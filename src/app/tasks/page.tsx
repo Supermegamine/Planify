@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input, Textarea, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { getEisenhowerQuadrant, getEisenhowerScore, isOverdue, formatDate } from "@/lib/utils";
+import { createDemoId } from "@/lib/demo-store";
+import { useDemoData } from "@/lib/use-demo-data";
 
 interface Task {
   id: string;
@@ -171,7 +173,8 @@ function DroppableColumn({ status, children }: { status: string; children: React
 }
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { data, update } = useDemoData();
+  const tasks = data.tasks;
   const [showModal, setShowModal] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -187,49 +190,68 @@ export default function TasksPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const fetchTasks = useCallback(async () => {
-    const res = await fetch("/api/tasks");
-    setTasks(await res.json());
-  }, []);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    if (editTask) {
-      await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editTask.id, ...form }),
-      });
-    } else {
-      await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-    }
+
+    update((current) => {
+      if (editTask) {
+        return {
+          ...current,
+          tasks: current.tasks.map((task) =>
+            task.id === editTask.id
+              ? {
+                  ...task,
+                  ...form,
+                  deadline: form.deadline ? `${form.deadline}T12:00:00.000Z` : null,
+                  description: form.description || null,
+                }
+              : task
+          ),
+        };
+      }
+
+      return {
+        ...current,
+        tasks: [
+          ...current.tasks,
+          {
+            id: createDemoId("task"),
+            title: form.title.trim(),
+            description: form.description || null,
+            deadline: form.deadline ? `${form.deadline}T12:00:00.000Z` : null,
+            importance: form.importance,
+            urgency: form.urgency,
+            status: "todo",
+            order: current.tasks.length,
+            completedAt: null,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      };
+    });
+
     setShowModal(false);
     setEditTask(null);
     setForm({ title: "", description: "", deadline: "", importance: "medium", urgency: "medium" });
-    fetchTasks();
   };
 
-  const updateStatus = async (id: string, status: string) => {
-    await fetch("/api/tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
-    });
-    fetchTasks();
+  const updateStatus = (id: string, status: string) => {
+    update((current) => ({
+      ...current,
+      tasks: current.tasks.map((task) =>
+        task.id === id
+          ? { ...task, status, completedAt: status === "done" ? new Date().toISOString() : null }
+          : task
+      ),
+    }));
   };
 
-  const deleteTask = async (id: string) => {
-    await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
-    fetchTasks();
+  const deleteTask = (id: string) => {
+    update((current) => ({
+      ...current,
+      tasks: current.tasks.filter((task) => task.id !== id),
+    }));
   };
 
   const openEdit = (task: Task) => {
@@ -248,29 +270,32 @@ export default function TasksPage() {
     setActiveTask(tasks.find((t) => t.id === active.id) ?? null);
   };
 
-  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveTask(null);
     if (!over) return;
 
     const taskId = active.id as string;
-    const task = tasks.find((t) => t.id === taskId);
+    const task = tasks.find((item) => item.id === taskId);
     if (!task) return;
 
     const targetStatus = (STATUSES as readonly string[]).includes(over.id as string)
       ? (over.id as Status)
-      : (tasks.find((t) => t.id === over.id)?.status as Status | undefined);
+      : (tasks.find((item) => item.id === over.id)?.status as Status | undefined);
 
     if (!targetStatus || targetStatus === task.status) return;
 
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t))
-    );
-
-    await fetch("/api/tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: taskId, status: targetStatus }),
-    });
+    update((current) => ({
+      ...current,
+      tasks: current.tasks.map((item) =>
+        item.id === taskId
+          ? {
+              ...item,
+              status: targetStatus,
+              completedAt: targetStatus === "done" ? new Date().toISOString() : null,
+            }
+          : item
+      ),
+    }));
   };
 
   const sortedTasks = [...tasks].sort(
