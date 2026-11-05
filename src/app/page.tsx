@@ -1,30 +1,24 @@
-import { prisma } from "@/lib/db";
+"use client";
+
+import { useDemoData } from "@/lib/use-demo-data";
+import { localDateString } from "@/lib/demo-store";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { isOverdue, getEisenhowerScore, formatDate } from "@/lib/utils";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export default function Dashboard() {
+  const { data } = useDemoData();
+  const todayStr = localDateString();
+  const allTasks = data.tasks;
+  const tasks = allTasks.filter((task) => task.status !== "done");
+  const habits = data.habits;
+  const events = data.events
+    .filter((event) => event.date.slice(0, 10) === todayStr)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const standups = [...data.standups].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 1);
 
-export default async function Dashboard() {
-  const [tasks, habits, events, standups] = await Promise.all([
-    prisma.task.findMany({ where: { status: { not: "done" } } }),
-    prisma.habit.findMany({ include: { logs: true } }),
-    prisma.event.findMany({
-      where: {
-        date: {
-          gte: new Date(new Date().toISOString().split("T")[0]),
-          lt: new Date(
-            new Date(Date.now() + 86400000).toISOString().split("T")[0]
-          ),
-        },
-      },
-      orderBy: { startTime: "asc" },
-    }),
-    prisma.standup.findMany({ orderBy: { date: "desc" }, take: 1 }),
-  ]);
-
-  const topTasks = tasks
+  const topTasks = [...tasks]
     .sort(
       (a, b) =>
         getEisenhowerScore(b.importance, b.urgency) -
@@ -32,17 +26,14 @@ export default async function Dashboard() {
     )
     .slice(0, 5);
 
-  const todayStr = new Date().toISOString().split("T")[0];
-  const habitsToday = habits.map((h) => ({
-    ...h,
-    completedToday: h.logs.some(
-      (l) => new Date(l.date).toISOString().split("T")[0] === todayStr
-    ),
+  const habitsToday = habits.map((habit) => ({
+    ...habit,
+    completedToday: habit.logs.some((log) => log.date.slice(0, 10) === todayStr),
   }));
 
-  const completedTasks = await prisma.task.count({ where: { status: "done" } });
-  const totalTasks = await prisma.task.count();
-  const habitsDoneToday = habitsToday.filter((h) => h.completedToday).length;
+  const completedTasks = allTasks.filter((task) => task.status === "done").length;
+  const totalTasks = allTasks.length;
+  const habitsDoneToday = habitsToday.filter((habit) => habit.completedToday).length;
 
   return (
     <div className="space-y-8">
