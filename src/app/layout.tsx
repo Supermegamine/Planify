@@ -1,17 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { Sidebar } from "@/components/layout/sidebar";
+import { DemoBanner } from "@/components/layout/demo-banner";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Planify — Smart Planner & Habit Tracker",
@@ -24,13 +14,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex">
         <Sidebar />
-        <main className="ml-64 flex-1 p-8">{children}</main>
+        <main className="ml-64 min-w-0 flex-1 p-8">
+          <DemoBanner />
+          {children}
+        </main>
       </body>
     </html>
   );
