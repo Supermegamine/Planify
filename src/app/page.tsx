@@ -40,11 +40,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
         <p className="mt-1 text-muted-foreground">
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
+Your workspace at a glance
         </p>
       </div>
 
