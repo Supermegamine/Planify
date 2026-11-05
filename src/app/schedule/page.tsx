@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -203,12 +203,17 @@ function DayColumn({
 
 export default function SchedulePage() {
   const { data, update } = useDemoData();
-  const [weekStart, setWeekStart] = useState(() => {
+  const [weekStart, setWeekStart] = useState("2026-11-02");
+  const [todayStr, setTodayStr] = useState("2026-11-05");
+
+  useEffect(() => {
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(now.setDate(diff)).toISOString().split("T")[0];
-  });
+    now.setDate(diff);
+    setWeekStart(now.toISOString().split("T")[0]);
+    setTodayStr(new Date().toISOString().split("T")[0]);
+  }, []);
   const [showModal, setShowModal] = useState(false);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [form, setForm] = useState({
@@ -327,7 +332,6 @@ export default function SchedulePage() {
     }));
   };
 
-  const todayStr = new Date().toISOString().split("T")[0];
 
   return (
     <div className="space-y-6">
