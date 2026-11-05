@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useDemoData } from "@/lib/use-demo-data";
+import { localDateString } from "@/lib/demo-store";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -44,6 +46,11 @@ export default function AnalyticsPage() {
   const tasks = data.tasks;
   const habits = data.habits;
   const standups = [...data.standups].sort((a, b) => b.date.localeCompare(a.date));
+  const [todayStr, setTodayStr] = useState("2026-11-05");
+
+  useEffect(() => {
+    setTodayStr(localDateString());
+  }, []);
 
   const tasksByStatus = [
     { name: "Done", value: tasks.filter((t) => t.status === "done").length },
@@ -52,7 +59,8 @@ export default function AnalyticsPage() {
   ];
 
   const last14Days = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(Date.now() - (13 - i) * 86400000);
+    const d = new Date(`${todayStr}T12:00:00`);
+    d.setDate(d.getDate() - (13 - i));
     return d.toISOString().split("T")[0];
   });
 
