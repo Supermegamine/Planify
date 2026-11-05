@@ -40,7 +40,7 @@ npm run dev
 
 The browser demo store is initialized with sample data on first visit. To verify the production export locally:
 
-```bash
+```bash 
 npm run build
 npx serve out
 ```
