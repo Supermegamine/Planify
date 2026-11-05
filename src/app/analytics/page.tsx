@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useDemoData } from "@/lib/use-demo-data";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -40,24 +40,10 @@ interface Standup {
 const PIE_COLORS = ["#22c55e", "#6366f1", "#64748b"];
 
 export default function AnalyticsPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [standups, setStandups] = useState<Standup[]>([]);
-
-  const fetchData = useCallback(async () => {
-    const [tasksRes, habitsRes, standupsRes] = await Promise.all([
-      fetch("/api/tasks"),
-      fetch("/api/habits"),
-      fetch("/api/standups"),
-    ]);
-    setTasks(await tasksRes.json());
-    setHabits(await habitsRes.json());
-    setStandups(await standupsRes.json());
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data } = useDemoData();
+  const tasks = data.tasks;
+  const habits = data.habits;
+  const standups = [...data.standups].sort((a, b) => b.date.localeCompare(a.date));
 
   const tasksByStatus = [
     { name: "Done", value: tasks.filter((t) => t.status === "done").length },
