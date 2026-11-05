@@ -42,7 +42,7 @@ export function Sidebar() {
         })}
       </nav>
       <div className="border-t border-border p-4">
-        <p className="text-xs text-muted-foreground">Built with Next.js + Prisma</p>
+        <p className="text-xs text-muted-foreground">Static demo · Local sample data</p>
       </div>
     </aside>
   );
