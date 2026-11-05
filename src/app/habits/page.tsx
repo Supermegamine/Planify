@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { getStreakCount } from "@/lib/utils";
+import { createDemoId, localDateString } from "@/lib/demo-store";
+import { useDemoData } from "@/lib/use-demo-data";
 
 interface HabitLog {
   id: string;
@@ -35,64 +37,80 @@ interface Standup {
 const COLORS = ["#6366f1", "#ec4899", "#f59e0b", "#22c55e", "#06b6d4", "#8b5cf6"];
 
 export default function HabitsPage() {
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [standups, setStandups] = useState<Standup[]>([]);
+  const { data, update } = useDemoData();
+  const habits = data.habits;
+  const standups = data.standups;
   const [showHabitModal, setShowHabitModal] = useState(false);
   const [showStandupModal, setShowStandupModal] = useState(false);
   const [habitForm, setHabitForm] = useState({ name: "", color: "#6366f1", frequency: "daily" });
   const [standupForm, setStandupForm] = useState({ done: "", planned: "", blockers: "", mood: 3 });
 
-  const fetchData = useCallback(async () => {
-    const [habitsRes, standupsRes] = await Promise.all([
-      fetch("/api/habits"),
-      fetch("/api/standups"),
-    ]);
-    setHabits(await habitsRes.json());
-    setStandups(await standupsRes.json());
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const toggleHabit = async (habitId: string) => {
-    await fetch("/api/habits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "toggle", habitId }),
-    });
-    fetchData();
+  const toggleHabit = (habitId: string) => {
+    const today = localDateString();
+    update((current) => ({
+      ...current,
+      habits: current.habits.map((habit) => {
+        if (habit.id !== habitId) return habit;
+        const alreadyDone = habit.logs.some((log) => log.date.slice(0, 10) === today);
+        return {
+          ...habit,
+          logs: alreadyDone
+            ? habit.logs.filter((log) => log.date.slice(0, 10) !== today)
+            : [...habit.logs, { id: createDemoId("log"), date: today, completed: true }],
+        };
+      }),
+    }));
   };
 
-  const createHabit = async (e: React.FormEvent) => {
+  const createHabit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!habitForm.name.trim()) return;
-    await fetch("/api/habits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(habitForm),
-    });
+    update((current) => ({
+      ...current,
+      habits: [
+        ...current.habits,
+        {
+          id: createDemoId("habit"),
+          name: habitForm.name.trim(),
+          icon: "check",
+          color: habitForm.color,
+          frequency: habitForm.frequency,
+          logs: [],
+        },
+      ],
+    }));
     setShowHabitModal(false);
     setHabitForm({ name: "", color: "#6366f1", frequency: "daily" });
-    fetchData();
   };
 
-  const deleteHabit = async (id: string) => {
-    await fetch(`/api/habits?id=${id}`, { method: "DELETE" });
-    fetchData();
+  const deleteHabit = (id: string) => {
+    update((current) => ({
+      ...current,
+      habits: current.habits.filter((habit) => habit.id !== id),
+    }));
   };
 
-  const submitStandup = async (e: React.FormEvent) => {
+  const submitStandup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!standupForm.done.trim() || !standupForm.planned.trim()) return;
-    await fetch("/api/standups", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(standupForm),
+    const today = localDateString();
+    update((current) => {
+      const existing = current.standups.find((standup) => standup.date.slice(0, 10) === today);
+      const next = {
+        id: existing?.id ?? createDemoId("standup"),
+        date: today,
+        done: standupForm.done,
+        planned: standupForm.planned,
+        blockers: standupForm.blockers || null,
+        mood: standupForm.mood,
+      };
+      return {
+        ...current,
+        standups: [next, ...current.standups.filter((standup) => standup.date.slice(0, 10) !== today)],
+      };
     });
     setShowStandupModal(false);
     setStandupForm({ done: "", planned: "", blockers: "", mood: 3 });
-    fetchData();
   };
 
   const todayStr = new Date().toISOString().split("T")[0];
