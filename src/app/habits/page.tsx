@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,11 @@ export default function HabitsPage() {
   const [showStandupModal, setShowStandupModal] = useState(false);
   const [habitForm, setHabitForm] = useState({ name: "", color: "#6366f1", frequency: "daily" });
   const [standupForm, setStandupForm] = useState({ done: "", planned: "", blockers: "", mood: 3 });
+  const [todayStr, setTodayStr] = useState("2026-11-05");
+
+  useEffect(() => {
+    setTodayStr(localDateString());
+  }, []);
 
   const toggleHabit = (habitId: string) => {
     const today = localDateString();
@@ -113,9 +118,9 @@ export default function HabitsPage() {
     setStandupForm({ done: "", planned: "", blockers: "", mood: 3 });
   };
 
-  const todayStr = new Date().toISOString().split("T")[0];
   const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - i * 86400000);
+    const d = new Date(`${todayStr}T12:00:00`);
+    d.setDate(d.getDate() - i);
     return d.toISOString().split("T")[0];
   }).reverse();
 
